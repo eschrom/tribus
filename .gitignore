@@ -5,3 +5,5 @@ tribus/__pycache__/*
 .idea/*
 *.pdf
 *.vscode
+.venv/
+data/
