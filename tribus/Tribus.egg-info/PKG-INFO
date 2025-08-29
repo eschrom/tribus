@@ -1,16 +1,232 @@
-Metadata-Version: 2.1
-Name: Tribus
-Version: 0.0.1
-Summary: 'Cell type based analysis of multiplexed imaging data'
+Metadata-Version: 2.4
+Name: tribus
+Version: 0.1.0
+Summary: Add your description here
 Home-page: 'https://github.com/farkkilab/tribus'
 Author: 'Julia Casado, Angela Szabo, Miikka Kilkkila'
 Author-email: 'julia.casado@helsinki.fi'
-Classifier: Programming Language :: Python :: 3
-Classifier: License :: OSI Approved :: MIT License
-Classifier: Operating System :: OS Independent
-Classifier: Intended Audience :: Science/Research
-Classifier: Natural Language :: English
-Requires-Python: >=3.8
+Requires-Python: ==3.12.11
+Description-Content-Type: text/markdown
 License-File: LICENSE
+Requires-Dist: anndata==0.9.2
+Requires-Dist: argon2-cffi
+Requires-Dist: arrow
+Requires-Dist: beautifulsoup4
+Requires-Dist: bleach
+Requires-Dist: h5py
+Requires-Dist: igraph
+Requires-Dist: ipykernel
+Requires-Dist: ipython
+Requires-Dist: jedi
+Requires-Dist: jinja2
+Requires-Dist: joblib
+Requires-Dist: jsonschema
+Requires-Dist: jupyterlab
+Requires-Dist: leidenalg
+Requires-Dist: llvmlite
+Requires-Dist: matplotlib
+Requires-Dist: numba
+Requires-Dist: numpy>=1.24
+Requires-Dist: pandas>=2.1
+Requires-Dist: patsy
+Requires-Dist: psutil
+Requires-Dist: pyarrow
+Requires-Dist: pynndescent
+Requires-Dist: pyyaml
+Requires-Dist: pyzmq
+Requires-Dist: scanpy==1.9.3
+Requires-Dist: scikit-learn>=1.3
+Requires-Dist: scipy==1.13.0
+Requires-Dist: seaborn
+Requires-Dist: session-info
+Requires-Dist: statsmodels
+Requires-Dist: tqdm
+Requires-Dist: umap-learn
+Requires-Dist: appdirs
+Requires-Dist: asciitree
+Requires-Dist: cloudpickle
+Requires-Dist: colorcet
+Requires-Dist: et-xmlfile
+Requires-Dist: future
+Requires-Dist: heapdict
+Requires-Dist: hyperopt
+Requires-Dist: imageio
+Requires-Dist: minisom
+Requires-Dist: openpyxl
+Requires-Dist: pillow==9.5.0
+Requires-Dist: pint
+Requires-Dist: py4j
+Requires-Dist: pydantic==1.10.12
+Requires-Dist: pyopengl
+Requires-Dist: pyparsing
+Requires-Dist: pypdf2
+Requires-Dist: pyside6
+Requires-Dist: qtpy
+Requires-Dist: scikit-image
+Requires-Dist: sklearn-som
+Requires-Dist: sphinxcontrib-applehelp
+Requires-Dist: sphinxcontrib-devhelp
+Requires-Dist: sphinxcontrib-htmlhelp
+Requires-Dist: sphinxcontrib-jsmath
+Requires-Dist: sphinxcontrib-qthelp
+Requires-Dist: sphinxcontrib-serializinghtml
+Requires-Dist: tifffile
+Requires-Dist: tomli-w
+Requires-Dist: toolz
+Requires-Dist: widgetsnbextension
+Requires-Dist: wrapt
+Requires-Dist: xlsxwriter
+Dynamic: license-file
 
-'Tribus is a lightweight package to help analysis of multiplexed imaging data, such as cyclic immunofluorescence imaging (CyCIF). Its core functionality lies on automatic cell type assignment of large datasets via hiarchical categorization based on user-given prior knowledge.'
+# Tribus: **Semi-automated panel-informed discovery of cell identities and phenotypes from multiplexed imaging and proteomic data**![img](./figures/Tribus_workflow.png)
+
+## Installation
+
+* For setting up conda environment, please use ``tribus_environment.yml`` to install all the dependencies. Run in conda prompt window:
+
+```
+conda env create --file=tribus_environment.yml
+# This environment allows you to run Tribus and repeat all the analyzes in the manuscript. 
+```
+
+* Clone from GitHub repository.
+* Then, run the following command in your conda environment of Tribus:
+
+```
+conda activate tribus
+
+cd tribus/
+python setup.py develop
+pip install  -e ./
+```
+
+Now you are ready to use Tribus!
+
+## Usage instructions
+
+### Tribus for cell type classification
+
+* We provide a jupyter notebook example. Please see the example `Tribus_run.ipynb`.
+* Datasets included in the manuscript and the corresponding scripts could be downloaded from Synapse with ID: `syn53754523`.
+
+#### Input dataset
+
+* Tribus requires an input dataset following the template below.
+* No need to remove columns that are unused for cell type calling, Tribus will only read in the columns that you specified in the logic table.
+* You can even include morphological features in the logic table, such as eccentricity or cell area, as long as it is helpful for the cell type calling. Those might be useful for identifying certain cell types (e.g. (1) a cell with eccentricity close to 0, which means roundness, is less likely to be a fibroblast, (2) tumor cells tend to have larger cell area). However, those features are more ambiguous for cell type annotation compared with typical marker expression. Thus, please be careful if you want to include those features. 
+
+| CellID | Marker 1 | Marker 2 | ... | Marker N | **Eccentricity** | Cell Area |
+| ------ | -------- | -------- | --- | -------- | ---------------------- | --------- |
+| 1      |          |          | ... |          |                        |           |
+| 2      |          |          | ... |          |                        |           |
+
+#### Logic table
+
+Here is an example of a 1-level logic table. The logic table is designed based on the marker panel following some rules: 
+
+* If a marker should be present in a specific cell type, the value in the logic table needs to be assigned by 1. If a marker is supposed to be absent in a specific cell type, then the value in the logic table should be assigned -1. For neutral or unknown markers, 0 should be assigned.
+* You can contain a marker will all 0, if you want to include this marker but are uncertain about the presence/absent of the marker.
+* One cell type should have at least one positive marker among the whole logic table.
+
+| Marker   | Cancer | Stromal | CD.4.Tcell | CD8.T.cell | CD11c.Myeloid | IBA1.Myeloid |
+| -------- | ------ | ------- | ---------- | ---------- | ------------- | ------------ |
+| CK7      | 1      | -1      | -1         | -1         | -1            | -1           |
+| PAX8     | 1      | 0       | 0          | 0          | 0             | 0            |
+| Vimentin | -1     | 1       | 0          | 0          | 0             | 0            |
+| CD4      | 0      | -1      | 1          | -1         | -1            | -1           |
+| CD8a     | 0      | -1      | -1         | 1          | -1            | -1           |
+| IBA1     | 0      | 0       | 0          | 0          | 0             | 1            |
+| CD11c    | 0      | 0       | 0          | 0          | 1             | 0            |
+
+#### Tribus Parameter
+
+```
+# set random seed to ensure reproducing
+depth = 1
+labels, scores = tribus.run_tribus(np.arcsinh(sample_data[cols]/5.0), logic, depth=depth, normalization=z_score, 
+                            tuning=0, sigma=1, learning_rate=1, 
+                            clustering_threshold=100, undefined_threshold=0.0005, other_threshold=0.4, random_state=42)
+```
+
+* `depth`: levels of the logic table. You can set depth smaller than the levels you have - in this case, Tribus will stop at the level as you wish.
+* `normalization`: z_score or None
+* `tuning`: When you set a number here, Tribus will run hyperparameter optimization with [number] rounds of repeat for `sigma` and `learning rate`. If you set 0, Tribus will not do hyperparameter optimization. We recommend you use hyperparameter optimization if you are not satisfied with the result and don't know how to adjust `sigma` and `learning rate`.
+* `sigma`: is the radius of the different neighbors in the SOM. The default value for this is 1.0.
+* `learning_rate`: determines how much weights are adjusted during each iteration.
+* `clustering_threshold`: If the number of cells is smaller than the threshold you set here, Tribus will skip the SOM clustering and calculate the scoring function at the single-cell level.
+* `undefined_threshold`: if the difference between the maximum and second maximum score is smaller than the threshold, the cluster will be labeled as "undefined_[level_name]".
+* `other_threshold`: if the maximum score of a cluster is smaller than the threshold, the cluster will be labeled as the "other"
+* `random_state`: None or any random seeds you like. To ensure the reproduction of your result :)
+
+#### Tribus visualization
+
+Tribus provides some visualization functions. You can find examples in example `Tribus_run.ipynb` in this repository.
+
+* `marker_expression`: allows you to visualize the marker expression. You can evaluate the quality of the marker by checking this plot. ![img](./figures/Marker_expression.png)
+* `cell_type_distribution`: Allows you to check the distribution of the cell types and evaluate the quality of the cell type calling result. ![img](./figures/Celltype_barplot.png)
+* `heatmap_for_median_expression`: Draw a heatmap that allows you to check the marker expression in each cell type. ![img](./figures/Celltype_heatmap.png)
+
+#### Napari plugin for fast user interaction
+
+We provide `Tribus_napari_full_widget.ipynb` to run a fast napari plugin. Run the chunks in the notebook and a napari window will pop out. You can check the quality of cell type calling and adjust the logic table correspondingly by directly running Tribus through the napari interface or you can visualize previously assigned labels. 
+
+* `Celltype_mask`: Visualizes assigned celltypes across the sample
+* `Marker_intensity_mask`: Visualizes selected marker intensity across the sample
+* `Probability_mask`: Visualizes Tribus's probability score per cell type
+
+![](./figures/celltype_mask.gif)
+
+#### Napari Inputs
+
+##### Image opener
+
+* `impath`: Path to your image with .tif/.tiff extension.
+* `channel list`: Path to an excel file containing a column ‘Channel_name’. This column should contain the name of your markers (image channels essentially) in the right order. 
+
+##### Run Tribus and display results directly
+
+* Select the masks you want to visulaize.
+* `marker`: Type the name of the marker for intensity masking (optional). The marker name has to exatly match the naming in the quantification table. 
+* You can set the paramters for Tribus (see `Tribus Parameter`section above).
+* `mask path`: Segmentation mask with .tif/.tiff extension.
+* `sample data`: Quantification .csv table, where the rows correspond to cells and the columns are features. 
+* `logic`: Tribus logic table (see `Logic Table` section above).
+* `output folder`: Folder path to save results.
+
+##### Visualizing existing data - Labels
+
+* `mask path`: Segmentation mask with .tif/.tiff extension.
+* `labels`: A .csv file containing labels for each cell. The table should have two columns, one named ‘ID’ which contains the cellIDs, and one ‘final_label’ which contains the assigned labels. Tribus produces output in this format, but if you are using different data, make sure your naming is correct. 
+
+##### Visualizing existing data - Intensities
+
+* `marker`: Type the name of the marker for intensity masking (optional). The marker name has to exatly match the naming in the quantification table.
+* `mask path`: Segmentation mask with .tif/.tiff extension.
+* `quantification`: Quantification .csv table, where the rows correspond to cells and the columns are features.
+
+## Folder structure
+
+Here is an example of folder structure:
+P.S. The input data and gate logic could be anywhere else in the computer as long as we specify the correct path when running Tribus.
+
+```
+    cool_project_name/
+    |_ data_logic.xlsx
+    |_ input_data/
+    |   |_ <data>.csv
+    |_ output_data/
+        |_ sample_name/
+        |    |_ <heatmap>.png
+        |    |_ <barplot>.png
+        |    |_ ...
+        |    |_ labels.csv
+        |_ sample_name/
+        |    |_ <heatmap>.png
+        |    |_ <barplot>.png
+        |    |_ ...
+        |    |_ labels.csv
+```
+
+## Citing Tribus
+
+If you used Tribus in your research, please consider citing us: [https://doi.org/10.1101/2024.03.13.584767](https://doi.org/10.1101/2024.03.13.584767)

@@ -1,7 +1,7 @@
 dist/*
 .eggs/*
-tribus.egg-info/*
-tribus/__pycache__/*
+*.egg-info/
+tribus/__pycache__/
 .idea/*
 *.pdf
 *.vscode
