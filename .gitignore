@@ -1,6 +1,6 @@
 dist/*
 .eggs/*
-*.egg-info/
+tribus/Tribus.egg-info/
 tribus/__pycache__/
 .idea/*
 *.pdf
